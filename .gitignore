@@ -6,4 +6,5 @@ dist-ssr
 .DS_Store
 coverage
 tsconfig.tsbuildinfo
+.claude/settings.local.json
 
