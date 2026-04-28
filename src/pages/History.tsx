@@ -60,13 +60,21 @@ export function History() {
             <ol className="space-y-1">
               {s.steps.map((step, i) => (
                 <li key={i} className="text-slate-300">
-                  <span className="font-mono">block {step.blockId}</span> →{' '}
-                  <span
-                    className={step.answer === 'yes' ? 'text-emerald-400' : 'text-rose-400'}
-                  >
-                    {step.answer}
-                  </span>
+                  <span className="font-mono">block {step.blockId}</span>
+                  {step.answer && (
+                    <>
+                      {' '}→{' '}
+                      <span
+                        className={step.answer === 'yes' ? 'text-emerald-400' : 'text-rose-400'}
+                      >
+                        {step.answer}
+                      </span>
+                    </>
+                  )}
                   {step.note && <span className="italic text-slate-400"> — {step.note}</span>}
+                  {step.photoIds.length > 0 && (
+                    <span className="text-slate-500"> · 📷 {step.photoIds.length}</span>
+                  )}
                 </li>
               ))}
             </ol>

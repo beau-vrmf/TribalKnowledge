@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getBlock } from '../data/fi-tree'
-import { useSession } from '../store/session'
+import { currentStep, useSession } from '../store/session'
 import { archiveSession } from '../db/sessions'
 import { Timer } from '../components/Timer'
 import { NoteDialog } from '../components/NoteDialog'
@@ -11,8 +11,8 @@ export function Session() {
   const navigate = useNavigate()
   const active = useSession((s) => s.active)
   const answer = useSession((s) => s.answer)
-  const addNote = useSession((s) => s.addNoteToStep)
-  const attachPhoto = useSession((s) => s.attachPhotoToStep)
+  const setNote = useSession((s) => s.setNoteOnCurrent)
+  const addPhoto = useSession((s) => s.addPhotoToCurrent)
   const pause = useSession((s) => s.pause)
   const resume = useSession((s) => s.resume)
 
@@ -55,12 +55,14 @@ export function Session() {
     )
   }
 
+  const step = currentStep(active)
+  const photoCount = step?.photoIds.length ?? 0
+
   const onAnswer = async (ans: 'yes' | 'no') => {
     const next = ans === 'yes' ? block.onYes : block.onNo
     pause()
     answer(block.id, ans, next)
     if (typeof next !== 'string') {
-      // Terminal: archive a snapshot then go to outcome.
       const snapshot = useSession.getState().active
       if (snapshot) await archiveSession(snapshot)
       navigate('/outcome', { replace: true })
@@ -68,9 +70,6 @@ export function Session() {
       resume()
     }
   }
-
-  const lastStepIndex = active.steps.length - 1
-  const lastStep = lastStepIndex >= 0 ? active.steps[lastStepIndex] : null
 
   return (
     <div className="flex-1 flex flex-col max-w-3xl w-full mx-auto">
@@ -112,18 +111,25 @@ export function Session() {
         <div className="flex gap-3 mt-2">
           <button
             onClick={() => setNoteOpen(true)}
-            className="flex-1 px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600"
-            disabled={lastStepIndex < 0}
+            className="flex-1 px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium"
           >
-            ✎ Add note{lastStep?.note ? ' (edit)' : ''}
+            ✎ {step?.note ? 'Edit note' : 'Add note'}
           </button>
-          {lastStepIndex >= 0 && (
-            <CameraCapture onCaptured={(id) => attachPhoto(lastStepIndex, id)} />
-          )}
+          <CameraCapture onCaptured={(id) => addPhoto(id)} />
         </div>
-        {lastStep?.note && (
-          <p className="text-sm text-slate-300 italic border-l-2 border-slate-600 pl-3">
-            Prev step note: {lastStep.note}
+
+        {step?.note && (
+          <div className="border-l-2 border-slate-600 pl-3">
+            <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
+              Note for this block
+            </p>
+            <p className="text-sm italic text-slate-200">{step.note}</p>
+          </div>
+        )}
+
+        {photoCount > 0 && (
+          <p className="text-xs text-slate-400">
+            📷 {photoCount} photo{photoCount === 1 ? '' : 's'} attached to this block
           </p>
         )}
       </div>
@@ -145,9 +151,9 @@ export function Session() {
 
       <NoteDialog
         open={noteOpen}
-        initial={lastStep?.note}
+        initial={step?.note}
         onClose={() => setNoteOpen(false)}
-        onSave={(note) => lastStepIndex >= 0 && addNote(lastStepIndex, note)}
+        onSave={(note) => setNote(note)}
       />
     </div>
   )

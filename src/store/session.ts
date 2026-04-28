@@ -4,10 +4,11 @@ import type { Outcome } from '../data/fi-tree'
 
 export type StepRecord = {
   blockId: string
-  answer: 'yes' | 'no'
-  at: number
+  enteredAt: number
+  answer: 'yes' | 'no' | null
+  answeredAt: number | null
   note?: string
-  photoId?: string // IndexedDB key
+  photoIds: string[] // multiple photos per block
 }
 
 export type ActiveSession = {
@@ -17,8 +18,8 @@ export type ActiveSession = {
   currentBlockId: string
   startedAt: number
   elapsedMs: number // accumulated while paused
-  resumedAt: number | null // timestamp when timer last started, null if paused
-  steps: StepRecord[]
+  resumedAt: number | null // timestamp when timer last resumed; null while paused
+  steps: StepRecord[] // index 0 is the entry block; last step is the current visit
   outcome: Outcome | null
 }
 
@@ -26,12 +27,23 @@ type SessionState = {
   active: ActiveSession | null
   startSession: (faultCode: string, entryBlockId: string) => void
   answer: (blockId: string, answer: 'yes' | 'no', next: string | Outcome) => void
-  addNoteToStep: (index: number, note: string) => void
-  attachPhotoToStep: (index: number, photoId: string) => void
+  setNoteOnCurrent: (note: string) => void
+  addPhotoToCurrent: (photoId: string) => void
+  removePhotoFromCurrent: (photoId: string) => void
   pause: () => void
   resume: () => void
   finish: () => void
   clear: () => void
+}
+
+function makeStep(blockId: string): StepRecord {
+  return {
+    blockId,
+    enteredAt: Date.now(),
+    answer: null,
+    answeredAt: null,
+    photoIds: [],
+  }
 }
 
 export const useSession = create<SessionState>()(
@@ -49,31 +61,60 @@ export const useSession = create<SessionState>()(
             startedAt: now,
             elapsedMs: 0,
             resumedAt: now,
-            steps: [],
+            steps: [makeStep(entryBlockId)],
             outcome: null,
           },
         })
       },
       answer: (blockId, answer, next) => {
         const a = get().active
-        if (!a) return
-        const step: StepRecord = { blockId, answer, at: Date.now() }
+        if (!a || a.steps.length === 0) return
+        const lastIdx = a.steps.length - 1
+        const last = a.steps[lastIdx]
+        if (last.blockId !== blockId) return // safety: ignore stale answers
+        const updatedLast: StepRecord = {
+          ...last,
+          answer,
+          answeredAt: Date.now(),
+        }
+        const steps = a.steps.slice(0, lastIdx).concat(updatedLast)
         if (typeof next === 'string') {
-          set({ active: { ...a, steps: [...a.steps, step], currentBlockId: next } })
+          set({
+            active: {
+              ...a,
+              steps: [...steps, makeStep(next)],
+              currentBlockId: next,
+            },
+          })
         } else {
-          set({ active: { ...a, steps: [...a.steps, step], outcome: next } })
+          set({ active: { ...a, steps, outcome: next } })
         }
       },
-      addNoteToStep: (index, note) => {
+      setNoteOnCurrent: (note) => {
         const a = get().active
-        if (!a) return
-        const steps = a.steps.map((s, i) => (i === index ? { ...s, note } : s))
+        if (!a || a.steps.length === 0) return
+        const lastIdx = a.steps.length - 1
+        const steps = a.steps.map((s, i) =>
+          i === lastIdx ? { ...s, note: note || undefined } : s,
+        )
         set({ active: { ...a, steps } })
       },
-      attachPhotoToStep: (index, photoId) => {
+      addPhotoToCurrent: (photoId) => {
         const a = get().active
-        if (!a) return
-        const steps = a.steps.map((s, i) => (i === index ? { ...s, photoId } : s))
+        if (!a || a.steps.length === 0) return
+        const lastIdx = a.steps.length - 1
+        const steps = a.steps.map((s, i) =>
+          i === lastIdx ? { ...s, photoIds: [...s.photoIds, photoId] } : s,
+        )
+        set({ active: { ...a, steps } })
+      },
+      removePhotoFromCurrent: (photoId) => {
+        const a = get().active
+        if (!a || a.steps.length === 0) return
+        const lastIdx = a.steps.length - 1
+        const steps = a.steps.map((s, i) =>
+          i === lastIdx ? { ...s, photoIds: s.photoIds.filter((p) => p !== photoId) } : s,
+        )
         set({ active: { ...a, steps } })
       },
       pause: () => {
@@ -92,7 +133,8 @@ export const useSession = create<SessionState>()(
     }),
     {
       name: 'tk-active-session',
-      version: 1,
+      version: 2, // bumped due to step schema change
+      migrate: () => ({ active: null }), // discard any v1 in-flight session
     },
   ),
 )
@@ -100,4 +142,8 @@ export const useSession = create<SessionState>()(
 export function totalElapsedMs(a: ActiveSession): number {
   const running = a.resumedAt ? Date.now() - a.resumedAt : 0
   return a.elapsedMs + running
+}
+
+export function currentStep(a: ActiveSession): StepRecord | null {
+  return a.steps.length > 0 ? a.steps[a.steps.length - 1] : null
 }

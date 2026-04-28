@@ -58,15 +58,17 @@ export function Outcome() {
               <li key={i} className="bg-slate-800 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-slate-300">Block {step.blockId}</span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded ${
-                      step.answer === 'yes'
-                        ? 'bg-emerald-700 text-emerald-50'
-                        : 'bg-rose-700 text-rose-50'
-                    }`}
-                  >
-                    {step.answer.toUpperCase()}
-                  </span>
+                  {step.answer && (
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded ${
+                        step.answer === 'yes'
+                          ? 'bg-emerald-700 text-emerald-50'
+                          : 'bg-rose-700 text-rose-50'
+                      }`}
+                    >
+                      {step.answer.toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 {b && <p className="text-sm text-slate-300 mt-1">{b.title}</p>}
                 {step.note && (
@@ -74,8 +76,10 @@ export function Outcome() {
                     {step.note}
                   </p>
                 )}
-                {step.photoId && (
-                  <p className="text-xs text-slate-400 mt-1">📷 Photo attached</p>
+                {step.photoIds.length > 0 && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    📷 {step.photoIds.length} photo{step.photoIds.length === 1 ? '' : 's'} attached
+                  </p>
                 )}
               </li>
             )
