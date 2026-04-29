@@ -108,6 +108,16 @@ export function Session() {
         <p className="text-base leading-relaxed text-slate-100 whitespace-pre-wrap">
           {block.text}
         </p>
+        {block.cautions && block.cautions.length > 0 && (
+          <div className="bg-rose-900/30 border-l-4 border-rose-500 rounded-r-md p-3">
+            <p className="text-xs uppercase font-semibold text-rose-300 mb-1">Caution</p>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-rose-100">
+              {block.cautions.map((c, i) => (
+                <li key={i}>{c}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {block.sheetNotes && block.sheetNotes.length > 0 && (
           <div className="bg-amber-900/30 border-l-4 border-amber-500 rounded-r-md p-3">
             <p className="text-xs uppercase font-semibold text-amber-300 mb-1">Note</p>

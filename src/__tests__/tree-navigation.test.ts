@@ -129,3 +129,50 @@ describe('FI tree navigation — fault 6110005 (Sheet 17)', () => {
     expect(useSession.getState().active?.currentBlockId).toBe(B54)
   })
 })
+
+describe('FI tree navigation — Sheet 19 / Sheet 21 cross-sheet jumps', () => {
+  beforeEach(() => {
+    useSession.setState({ active: null })
+  })
+
+  it('block 55 YES jumps to Sheet 19 entry block 61', () => {
+    const b55 = getBlock(bid('17', '55'))!
+    expect(b55.onYes).toBe(bid('19', '61'))
+    expect(getBlock(bid('19', '61'))).toBeDefined()
+  })
+
+  it('walks Sheet 19 happy path 61 → 62 → 63 → Sheet 21 entry 65', () => {
+    const { startSession, answer } = useSession.getState()
+    startSession('6110005', bid('19', '61'))
+
+    answer(bid('19', '61'), 'no', getBlock(bid('19', '61'))!.onNo)
+    expect(useSession.getState().active?.currentBlockId).toBe(bid('19', '62'))
+
+    answer(bid('19', '62'), 'yes', getBlock(bid('19', '62'))!.onYes)
+    expect(useSession.getState().active?.currentBlockId).toBe(bid('19', '63'))
+
+    answer(bid('19', '63'), 'yes', getBlock(bid('19', '63'))!.onYes)
+    expect(useSession.getState().active?.currentBlockId).toBe(bid('21', '65'))
+  })
+
+  it('walks Sheet 21 to terminal block 70 (propeller system normal)', () => {
+    const { startSession, answer, completeTerminal } = useSession.getState()
+    startSession('6110005', bid('21', '65'))
+
+    answer(bid('21', '65'), 'yes', getBlock(bid('21', '65'))!.onYes) // → 66
+    answer(bid('21', '66'), 'yes', getBlock(bid('21', '66'))!.onYes) // → 67
+    answer(bid('21', '67'), 'yes', getBlock(bid('21', '67'))!.onYes) // → 68
+    answer(bid('21', '68'), 'no', getBlock(bid('21', '68'))!.onNo) // → 70
+
+    const b70 = getBlock(bid('21', '70'))!
+    completeTerminal(bid('21', '70'), { kind: b70.terminalKind!, message: b70.text })
+    const a = useSession.getState().active!
+    expect(a.outcome?.kind).toBe('resolved')
+    expect(a.outcome?.message).toBe('Propeller system is normal. Secure system.')
+  })
+
+  it('block 63 carries a CAUTION callout', () => {
+    const b63 = getBlock(bid('19', '63'))!
+    expect(b63.cautions).toEqual(['Keep pitchlock time to a minimum.'])
+  })
+})

@@ -15,6 +15,7 @@ export type Block = {
   blockNumber: string // e.g. '47'
   text: string // verbatim TO text (includes the trailing question on decision blocks)
   sheetNotes?: string[] // verbatim NOTE callouts that apply to this block
+  cautions?: string[] // verbatim CAUTION callouts (rendered in red)
   imageRef?: string // optional path to TO source image, e.g. '/source/figures/2-4/sht-15.png'
   onYes?: string // BlockRef id for YES; if absent → terminal block
   onNo?: string // BlockRef id for NO; if absent → terminal block
@@ -153,7 +154,7 @@ Is index satisfactory?`,
   block('17', '55', {
     text: `Place propeller governor control switches to NORMAL/NORM.
 Is RPM stable?`,
-    onYes: bid('cross-sheet', '19'),
+    onYes: bid('19', '61'),
     onNo: bid('17', '56'),
   }),
   block('17', '56', {
@@ -180,6 +181,72 @@ Is RPM stable in normal governing mode after index?`,
   }),
 
   // ======================================================================
+  // Figure 2-4, Sheet 19 — continuation from block 55 (RPM stable in NORMAL)
+  // ======================================================================
+  block('19', '61', {
+    text: `a. Move throttles (3) to MAXIMUM REVERSE/MAX RVS.
+b. Record indications on engine torque indicators (2) and RPM indications in test set FUNCTION display (1).
+Is there a symmetrical torque difference in excess of 1000 inch-pounds?`,
+    onYes: bid('cross-sheet', '161'),
+    onNo: bid('19', '62'),
+  }),
+  block('19', '62', {
+    text: `Are RPM indications within limits of TO 1C-130H-2-61JG-10-1, 61-10-02 (subtask 1-2-2)?`,
+    onYes: bid('19', '63'),
+    onNo: bid('19', '64'),
+  }),
+  block('19', '63', {
+    text: `Perform pitchlock check of affected propeller in accordance with TO 1C-130H-2-61JG-10-1, 61-10-02 (subtask 1-2-10).
+Was a pitchlock obtained?`,
+    cautions: [`Keep pitchlock time to a minimum.`],
+    onYes: bid('21', '65'),
+    onNo: bid('cross-sheet', '163'),
+  }),
+  block('19', '64', {
+    text: `Fault is in engine or RPM indicating system. Shut down engines in accordance with TO 1C-130H-2-71JG-00-1, 71-00-10; or TO 1C-130(A)H-2-71JG-00-1, 71-00-10; then go to TO 1C-130H-2-71FI-00-1-1 and continue troubleshooting.`,
+    terminalKind: 'escalate',
+  }),
+
+  // ======================================================================
+  // Figure 2-4, Sheet 21 — continuation from block 63 (pitchlock obtained)
+  // ======================================================================
+  block('21', '65', {
+    text: `Did pitchlock disengage in accordance with TO 1C-130H-2-61JG-10-1, 61-10-02 (as indicated by torque and RPM reading same as initially recorded in the pitchlock check)?`,
+    onYes: bid('21', '66'),
+    onNo: bid('21', '69'),
+  }),
+  block('21', '66', {
+    text: `a. Perform synchrophaser index in accordance with TO 1C-130H-2-61JG-10-1, 61-10-02 (subtask 1-2-6).
+b. Move throttles (3) to GROUND IDLE/GND IDLE.
+Do propeller low pitch stops retract as indicated by a decrease on engine torque indicators (1)?`,
+    onYes: bid('21', '67'),
+    onNo: bid('cross-sheet', '167'),
+  }),
+  block('21', '67', {
+    text: `Shut down engines in accordance with TO 1C-130H-2-71JG-00-1, 71-00-10; TO 1C-130(A)H-2-71JG-00-1, 71-00-10; or TO 1C-130(M)H-2-71JG-00-1, 71-00-10.
+△△△1. Is FEATHER VALVE AND NTS CHECK light (2) on?
+△2. Is NTS light (2) on?`,
+    sheetNotes: [
+      `If correct results are not obtained, repeat the shutdown in normal ground idle rather than low speed ground idle.`,
+    ],
+    onYes: bid('21', '68'),
+    onNo: bid('cross-sheet', '119'),
+  }),
+  block('21', '68', {
+    text: `Is there a reported malfunction associated with a propeller vibration?`,
+    onYes: bid('cross-sheet', '169'),
+    onNo: bid('21', '70'),
+  }),
+  block('21', '69', {
+    text: `Shut down engines in accordance with TO 1C-130H-2-71JG-00-1, 71-00-10; TO 1C-130(A)H-2-71JG-00-1, 71-00-10; or TO 1C-130(M)H-2-71JG-00-1, 71-00-10; then replace pitchlock regulator assembly in accordance with TO 1C-130H-2-61JG-10-1, 61-10-11.`,
+    terminalKind: 'resolved',
+  }),
+  block('21', '70', {
+    text: `Propeller system is normal. Secure system.`,
+    terminalKind: 'resolved',
+  }),
+
+  // ======================================================================
   // Cross-sheet continuation stubs — author when those sheets are walked.
   // ======================================================================
   block('cross-sheet', '157', {
@@ -187,8 +254,28 @@ Is RPM stable in normal governing mode after index?`,
     terminalKind: 'escalate',
     stub: true,
   }),
-  block('cross-sheet', '19', {
-    text: `Continue troubleshooting on Figure 2-4 Sheet 19. This sheet has not yet been authored in the app — coordinate with SME or reference the original Technical Order.`,
+  block('cross-sheet', '161', {
+    text: `Continue troubleshooting on Figure 2-4 Sheet 161. This sheet has not yet been authored in the app — coordinate with SME or reference the original Technical Order.`,
+    terminalKind: 'escalate',
+    stub: true,
+  }),
+  block('cross-sheet', '163', {
+    text: `Continue troubleshooting on Figure 2-4 Sheet 163. This sheet has not yet been authored in the app — coordinate with SME or reference the original Technical Order.`,
+    terminalKind: 'escalate',
+    stub: true,
+  }),
+  block('cross-sheet', '167', {
+    text: `Continue troubleshooting on Figure 2-4 Sheet 167. This sheet has not yet been authored in the app — coordinate with SME or reference the original Technical Order.`,
+    terminalKind: 'escalate',
+    stub: true,
+  }),
+  block('cross-sheet', '169', {
+    text: `Continue troubleshooting on Figure 2-4 Sheet 169. This sheet has not yet been authored in the app — coordinate with SME or reference the original Technical Order.`,
+    terminalKind: 'escalate',
+    stub: true,
+  }),
+  block('cross-sheet', '119', {
+    text: `Continue troubleshooting on Figure 2-4 Sheet 119. This sheet has not yet been authored in the app — coordinate with SME or reference the original Technical Order.`,
     terminalKind: 'escalate',
     stub: true,
   }),
