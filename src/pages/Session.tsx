@@ -6,6 +6,7 @@ import { archiveSession } from '../db/sessions'
 import { Timer } from '../components/Timer'
 import { NoteDialog } from '../components/NoteDialog'
 import { CameraCapture } from '../components/CameraCapture'
+import { Lightbox } from '../components/Lightbox'
 
 export function Session() {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ export function Session() {
   const resume = useSession((s) => s.resume)
 
   const [noteOpen, setNoteOpen] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   useEffect(() => {
     if (!active) {
@@ -135,14 +137,23 @@ export function Session() {
           </div>
         )}
 
-        <div className="flex gap-3 mt-2">
+        <div className="flex flex-wrap gap-3 mt-2">
           <button
             onClick={() => setNoteOpen(true)}
-            className="flex-1 px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium"
+            className="flex-1 min-w-[8rem] px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium"
           >
             ✎ {step?.note ? 'Edit note' : 'Add note'}
           </button>
           <CameraCapture onCaptured={(id) => addPhoto(id)} />
+          {block.imageRef && (
+            <button
+              onClick={() => setLightboxOpen(true)}
+              className="flex-1 min-w-[8rem] px-4 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium"
+              aria-label="View Technical Order source page for this block"
+            >
+              📄 View TO source
+            </button>
+          )}
         </div>
 
         {step?.note && (
@@ -197,6 +208,15 @@ export function Session() {
         onClose={() => setNoteOpen(false)}
         onSave={(note) => setNote(note)}
       />
+
+      {block.imageRef && (
+        <Lightbox
+          open={lightboxOpen}
+          src={block.imageRef}
+          alt={`TO ${block.technicalOrder} · Fig ${block.figure} · Sheet ${block.sheet}`}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
     </div>
   )
 }

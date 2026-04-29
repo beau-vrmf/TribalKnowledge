@@ -42,6 +42,12 @@ function block(
   blockNumber: string,
   partial: Omit<Block, 'id' | 'technicalOrder' | 'figure' | 'sheet' | 'blockNumber'>,
 ): Block {
+  // Default imageRef to the sheet-level scan in /public/figures/<figure>/sht-<sheet>.png.
+  // Cross-sheet stub blocks have sheet === 'cross-sheet', so we skip them.
+  const defaultImageRef =
+    sheet !== 'cross-sheet' && !partial.imageRef
+      ? `/figures/${FIG}/sht-${sheet}.png`
+      : partial.imageRef
   return {
     id: bid(sheet, blockNumber),
     technicalOrder: TO,
@@ -49,6 +55,7 @@ function block(
     sheet,
     blockNumber,
     ...partial,
+    imageRef: defaultImageRef,
   }
 }
 
