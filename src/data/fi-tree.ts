@@ -143,10 +143,10 @@ Is index satisfactory?`,
     onNo: bid('17', '58'),
   }),
   block('17', '54', {
-    text: `NOTE
-Certain wind conditions may cause cyclic variation, however these should not exceed 1 percent.
-
-Place propeller governor control switches to MECH GOV/MECH. Is RPM stable (RPM does not vary more than 0.5 percent.)?`,
+    text: `Place propeller governor control switches to MECH GOV/MECH. Is RPM stable (RPM does not vary more than 0.5 percent.)?`,
+    sheetNotes: [
+      'Certain wind conditions may cause cyclic variation, however these should not exceed 1 percent.',
+    ],
     onYes: bid('17', '55'),
     onNo: bid('cross-sheet', '157'),
   }),
