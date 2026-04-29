@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getBlock } from '../data/fi-tree'
+import { getBlock, isTerminal } from '../data/fi-tree'
 import { currentStep, useSession } from '../store/session'
 import { archiveSession } from '../db/sessions'
 import { Timer } from '../components/Timer'
@@ -11,6 +11,7 @@ export function Session() {
   const navigate = useNavigate()
   const active = useSession((s) => s.active)
   const answer = useSession((s) => s.answer)
+  const completeTerminal = useSession((s) => s.completeTerminal)
   const setNote = useSession((s) => s.setNoteOnCurrent)
   const addPhoto = useSession((s) => s.addPhotoToCurrent)
   const pause = useSession((s) => s.pause)
@@ -71,14 +72,25 @@ export function Session() {
     }
   }
 
+  const onMarkComplete = async () => {
+    pause()
+    const kind = block.terminalKind ?? 'resolved'
+    completeTerminal(block.id, { kind, message: block.text })
+    const snapshot = useSession.getState().active
+    if (snapshot) await archiveSession(snapshot)
+    navigate('/outcome', { replace: true })
+  }
+
+  const terminal = isTerminal(block)
+
   return (
     <div className="flex-1 flex flex-col max-w-3xl w-full mx-auto">
       <div className="sticky top-0 bg-slate-950/95 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between gap-2">
         <div className="flex flex-col">
           <span className="text-xs uppercase tracking-wide text-slate-400">
-            Fault {active.faultCode} · Fig {block.figure}
+            Fault {active.faultCode} · Fig {block.figure} · Sheet {block.sheet}
           </span>
-          <span className="text-base font-semibold">Block {block.id}</span>
+          <span className="text-base font-semibold">Block {block.blockNumber}</span>
         </div>
         <Timer />
         <button
@@ -93,18 +105,23 @@ export function Session() {
       </div>
 
       <div className="flex-1 flex flex-col gap-4 px-4 py-5">
-        <h1 className="text-xl font-semibold">{block.title}</h1>
         <p className="text-base leading-relaxed text-slate-100 whitespace-pre-wrap">
-          {block.question}
+          {block.text}
         </p>
-        {block.notes && block.notes.length > 0 && (
+        {block.sheetNotes && block.sheetNotes.length > 0 && (
           <div className="bg-amber-900/30 border-l-4 border-amber-500 rounded-r-md p-3">
             <p className="text-xs uppercase font-semibold text-amber-300 mb-1">Note</p>
             <ul className="list-disc pl-5 space-y-1 text-sm text-amber-100">
-              {block.notes.map((n, i) => (
+              {block.sheetNotes.map((n, i) => (
                 <li key={i}>{n}</li>
               ))}
             </ul>
+          </div>
+        )}
+        {block.stub && (
+          <div className="bg-slate-800 border border-slate-600 rounded-md p-3 text-sm text-slate-300">
+            ⚠ This sheet has not yet been authored in the app. Tap “Mark fix complete” below
+            to record the escalation, or back out and reference the original Technical Order.
           </div>
         )}
 
@@ -134,19 +151,34 @@ export function Session() {
         )}
       </div>
 
-      <div className="sticky bottom-0 bg-slate-950/95 backdrop-blur border-t border-slate-800 px-4 py-4 grid grid-cols-2 gap-3">
-        <button
-          onClick={() => onAnswer('no')}
-          className="py-6 rounded-xl bg-rose-700 hover:bg-rose-600 text-white text-2xl font-bold shadow-lg"
-        >
-          NO
-        </button>
-        <button
-          onClick={() => onAnswer('yes')}
-          className="py-6 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-2xl font-bold shadow-lg"
-        >
-          YES
-        </button>
+      <div className="sticky bottom-0 bg-slate-950/95 backdrop-blur border-t border-slate-800 px-4 py-4">
+        {terminal ? (
+          <button
+            onClick={onMarkComplete}
+            className={`w-full py-6 rounded-xl text-white text-2xl font-bold shadow-lg ${
+              block.terminalKind === 'escalate'
+                ? 'bg-amber-700 hover:bg-amber-600'
+                : 'bg-emerald-700 hover:bg-emerald-600'
+            }`}
+          >
+            {block.terminalKind === 'escalate' ? 'Acknowledge & escalate' : 'Mark fix complete'}
+          </button>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => onAnswer('no')}
+              className="py-6 rounded-xl bg-rose-700 hover:bg-rose-600 text-white text-2xl font-bold shadow-lg"
+            >
+              NO
+            </button>
+            <button
+              onClick={() => onAnswer('yes')}
+              className="py-6 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-2xl font-bold shadow-lg"
+            >
+              YES
+            </button>
+          </div>
+        )}
       </div>
 
       <NoteDialog

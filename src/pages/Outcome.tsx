@@ -57,7 +57,9 @@ export function Outcome() {
             return (
               <li key={i} className="bg-slate-800 rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-slate-300">Block {step.blockId}</span>
+                  <span className="font-mono text-slate-300">
+                    {b ? `Sheet ${b.sheet} · Block ${b.blockNumber}` : `Block ${step.blockId}`}
+                  </span>
                   {step.answer && (
                     <span
                       className={`text-xs px-2 py-0.5 rounded ${
@@ -70,7 +72,11 @@ export function Outcome() {
                     </span>
                   )}
                 </div>
-                {b && <p className="text-sm text-slate-300 mt-1">{b.title}</p>}
+                {b && (
+                  <p className="text-sm text-slate-300 mt-1 line-clamp-3 whitespace-pre-wrap">
+                    {b.text}
+                  </p>
+                )}
                 {step.note && (
                   <p className="text-sm italic text-slate-200 mt-2 border-l-2 border-slate-600 pl-3">
                     {step.note}

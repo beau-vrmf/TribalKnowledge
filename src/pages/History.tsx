@@ -60,7 +60,7 @@ export function History() {
             <ol className="space-y-1">
               {s.steps.map((step, i) => (
                 <li key={i} className="text-slate-300">
-                  <span className="font-mono">block {step.blockId}</span>
+                  <span className="font-mono">{step.blockId}</span>
                   {step.answer && (
                     <>
                       {' '}→{' '}

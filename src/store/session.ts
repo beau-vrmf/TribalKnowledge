@@ -26,7 +26,8 @@ export type ActiveSession = {
 type SessionState = {
   active: ActiveSession | null
   startSession: (faultCode: string, entryBlockId: string) => void
-  answer: (blockId: string, answer: 'yes' | 'no', next: string | Outcome) => void
+  answer: (blockId: string, answer: 'yes' | 'no', next: string | Outcome | undefined) => void
+  completeTerminal: (blockId: string, outcome: Outcome) => void
   setNoteOnCurrent: (note: string) => void
   addPhotoToCurrent: (photoId: string) => void
   removePhotoFromCurrent: (photoId: string) => void
@@ -86,9 +87,28 @@ export const useSession = create<SessionState>()(
               currentBlockId: next,
             },
           })
-        } else {
+        } else if (next) {
           set({ active: { ...a, steps, outcome: next } })
+        } else {
+          // No next defined — treat as escalate (cross-sheet not authored, etc.)
+          set({
+            active: {
+              ...a,
+              steps,
+              outcome: { kind: 'escalate', message: 'Tree path not yet authored.' },
+            },
+          })
         }
+      },
+      completeTerminal: (blockId, outcome) => {
+        const a = get().active
+        if (!a || a.steps.length === 0) return
+        const lastIdx = a.steps.length - 1
+        const last = a.steps[lastIdx]
+        if (last.blockId !== blockId) return
+        const updatedLast: StepRecord = { ...last, answeredAt: Date.now() }
+        const steps = a.steps.slice(0, lastIdx).concat(updatedLast)
+        set({ active: { ...a, steps, outcome } })
       },
       setNoteOnCurrent: (note) => {
         const a = get().active
@@ -133,8 +153,8 @@ export const useSession = create<SessionState>()(
     }),
     {
       name: 'tk-active-session',
-      version: 2, // bumped due to step schema change
-      migrate: () => ({ active: null }), // discard any v1 in-flight session
+      version: 3, // bumped due to scoped-id block schema change
+      migrate: () => ({ active: null }), // discard any prior in-flight session
     },
   ),
 )
