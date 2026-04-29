@@ -224,8 +224,8 @@ Do propeller low pitch stops retract as indicated by a decrease on engine torque
   }),
   block('21', '67', {
     text: `Shut down engines in accordance with TO 1C-130H-2-71JG-00-1, 71-00-10; TO 1C-130(A)H-2-71JG-00-1, 71-00-10; or TO 1C-130(M)H-2-71JG-00-1, 71-00-10.
-△△△1. Is FEATHER VALVE AND NTS CHECK light (2) on?
-△2. Is NTS light (2) on?`,
+1. Is FEATHER VALVE AND NTS CHECK light (2) on?
+2. Is NTS light (2) on?`,
     sheetNotes: [
       `If correct results are not obtained, repeat the shutdown in normal ground idle rather than low speed ground idle.`,
     ],
